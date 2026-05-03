@@ -1,5 +1,11 @@
 # ArabicBASIC
 
+*الحوسبة الآمنة بلغتك*
+*برمجة آمنة بلغتك الأم*
+*Safe computing in your own language*
+
+"A programming language should do what you mean"
+
 A standalone **interpreter** for Arabic BASIC: programs use **Arabic keywords and identifiers** (and may use **Eastern Arabic–Indic digits** in numeric literals). The runtime is written in **Java** (ANTLR 4, Picocli) and ships as a JAR for any platform with a **Java 21+** runtime.
 
 The interpreter sets the JVM default locale to **Arabic** with the **`ar-u-nu-arab`** numbering extension so numeric formatting and related locale behavior align with Arabic contexts.
