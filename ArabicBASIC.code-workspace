@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "ARABASIC2",
+    },
+  ],
+  "settings": {
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.maven.enabled": true,
+    "java.import.maven.userSettingsFile": ".m2/settings.xml",
+    "java.import.maven.globalSettingsFile": ".m2/settings.xml",
+  },
+  "extensions": {
+    "recommendations": ["vscjava.vscode-java-pack"],
+  },
+}
