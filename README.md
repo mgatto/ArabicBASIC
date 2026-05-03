@@ -1,6 +1,6 @@
 # ArabicBASIC
 
-*الحوسبة الآمنة بلغتك*
+<!-- *الحوسبة الآمنة بلغتك* -->
 *برمجة آمنة بلغتك الأم*
 *Safe computing in your own language*
 
