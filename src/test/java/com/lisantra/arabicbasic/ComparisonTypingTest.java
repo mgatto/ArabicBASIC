@@ -26,7 +26,7 @@ class ComparisonTypingTest {
   private static void interpret(String source, Locale messageLocale) {
     Map<String, Variable> globalScope = new LinkedHashMap<>();
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     InterpreterVisitor visitor =
         new InterpreterVisitor(arabicLocale(), messageLocale, globalScope, false);
     visitor.visit(parser.program());
@@ -35,7 +35,7 @@ class ComparisonTypingTest {
   private static ArabicBasicRuntimeException interpretFailure(String source, Locale messageLocale) {
     Map<String, Variable> globalScope = new LinkedHashMap<>();
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     InterpreterVisitor visitor =
         new InterpreterVisitor(arabicLocale(), messageLocale, globalScope, false);
     return assertThrows(

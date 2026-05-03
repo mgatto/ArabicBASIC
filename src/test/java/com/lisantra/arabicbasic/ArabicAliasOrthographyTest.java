@@ -22,7 +22,7 @@ class ArabicAliasOrthographyTest {
   private static Map<String, Variable> interpret(String source) {
     Map<String, Variable> globalScope = new LinkedHashMap<>();
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     InterpreterVisitor visitor =
         new InterpreterVisitor(arabicLocale(), Locale.ENGLISH, globalScope, false);
     visitor.visit(parser.program());
@@ -31,14 +31,14 @@ class ArabicAliasOrthographyTest {
 
   private static void assertParses(String source) {
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     parser.program();
     assertEquals(0, parser.getNumberOfSyntaxErrors(), source);
   }
 
   private static void assertHasSyntaxError(String source) {
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     parser.program();
     assertTrue(parser.getNumberOfSyntaxErrors() > 0, source);
   }

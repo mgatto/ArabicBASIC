@@ -1,4 +1,8 @@
-grammar ArabicBASIC;
+parser grammar ArabicBASIC;
+
+options {
+	tokenVocab = ArabicBASICLexer;
+}
 
 @header {
 package com.lisantra.arabicbasic;
@@ -122,52 +126,3 @@ variable:
 	| (INTEGER | REAL)	# numeric
 	| STRING			# text
 	| ('صحيح' | 'خطأ')	# bool;
-COMMENT: '//' ~[\r\n]* EOL -> channel(HIDDEN);
-STRING: '"' (~'"' | '\\"')* '"';
-// Shared morphology fragments for adjectival/predicate keyword variants.
-fragment FEM_SUFFIX: 'ة';
-fragment QMARK_AR: '؟';
-// Keep keyword-token introduction minimal to avoid broad lexer-priority shifts vs IDENTIFIER.
-NEXT_ADJ: 'التالي' FEM_SUFFIX?;
-STACK_EMPTY_PRED: 'فارغ' FEM_SUFFIX? QMARK_AR;
-// Arabic-script letters used across Arabic/Persian/Urdu (letters only; punctuation excluded).
-fragment ARABIC_LETTER:
-	[\u0621-\u063A\u0641-\u064A\u066E-\u066F\u0671-\u06D3\u06D5\u06EE-\u06EF\u06FA-\u06FC\u06FF];
-// Arabic combining marks/diacritics.
-fragment ARABIC_MARK:
-	[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08E1\u08E3-\u08FF];
-// Join controls (not whitespace): ZWNJ, ZWJ.
-fragment JOIN_CONTROL: [\u200C\u200D];
-// Western + Arabic-Indic + Eastern Arabic-Indic digits.
-fragment ID_DIGIT: [0-9\u0660-\u0669\u06F0-\u06F9];
-// Start with an Arabic-script letter, then allow letters/marks/digits/_/tatweel which is \u0640
-IDENTIFIER:
-	ARABIC_LETTER (
-		ARABIC_LETTER
-		| ARABIC_MARK
-		| JOIN_CONTROL
-		| ID_DIGIT
-		| '_'
-		| '\u0640'
-	)*;
-COMMA: [,\u060C];
-// Arabic and ASCII commas are both accepted for argument/identifier lists.
-REAL: DIGIT [.,\u060C\u066B] DIGIT+;
-//Western Arabic numbers are increasingly in use throughout the Arabic-speaking world.
-INTEGER: [0\u0660] | [1-9\u0661-\u0669] DIGIT*;
-EOL:
-	// Extended Unicode line separators improve copy/paste robustness.
-	'\r\n'
-	| '\n'
-	| '\r'
-	| '\u0085' // NEL
-	| '\u2028' // Line Separator
-	| '\u2029'; // Paragraph Separator
-WS:
-	// Unicode-aware whitespace skipping (excluding line terminators handled by EOL).
-	[\u0009\u000B\u000C\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]+ -> skip;
-// Optional: tolerate BOM if present in source files.
-BOM: '\uFEFF' -> skip;
-// fragments are not token themselves, but non-atomic components of tokens
-fragment DIGIT: [0-9\u0660-\u0669];
-//wierdly, this will allow intermixing, when I really want Western OR Eastern Arabic numbers

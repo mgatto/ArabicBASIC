@@ -30,7 +30,7 @@ Helpful links:
 
 For a full walkthrough of syntax and features, see **[docs/tutorial-en.md](docs/tutorial-en.md)**.
 
-The grammar in `src/main/antlr4/ArabicBASIC.g4` defines the current syntax—for example assignments with **صار**, conditionals with **اذا** / **ثم** / **ختام اذا**, **اطبع** for output, **ادخل** for input, **مصفوفة(...)** for array construction, **مكدس()** + `ادفع`/`اسحب`/`انظر`/`فارغ؟` for stacks, and Arabic **IDENTIFIER** tokens.
+The grammar is split between `src/main/antlr4/ArabicBASIC.g4` (parser rules) and `src/main/antlr4/ArabicBASICLexer.g4` (lexer/token rules). Together they define the current syntax—for example assignments with **صار**, conditionals with **اذا** / **ثم** / **ختام اذا**, **اطبع** for output, **ادخل** for input, **مصفوفة(...)** for array construction, **مكدس()** + `ادفع`/`اسحب`/`انظر`/`فارغ؟` for stacks, and Arabic **IDENTIFIER** tokens.
 
 Boolean and predicate wording conventions are documented in [`docs/boolean-style-guide.md`](docs/boolean-style-guide.md) (for example, canonical `صحيح` / `خطأ` literals and `...؟` predicate naming).
 

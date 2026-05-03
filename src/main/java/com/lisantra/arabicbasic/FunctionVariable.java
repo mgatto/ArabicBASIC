@@ -6,14 +6,14 @@ import java.util.Objects;
 public class FunctionVariable extends Variable {
   private final String argSymbol;
   private final DeclarationSite argDeclarationSite;
-  private final ArabicBASICParser.ExpressionContext body;
+  private final ArabicBASIC.ExpressionContext body;
 
   public FunctionVariable(
       Symbol symbol,
       Value value,
       String argSymbol,
       DeclarationSite argDeclarationSite,
-      ArabicBASICParser.ExpressionContext body) {
+      ArabicBASIC.ExpressionContext body) {
     super(Objects.requireNonNull(symbol, "symbol"), Objects.requireNonNull(value, "value"));
     String arg = Objects.requireNonNull(argSymbol, "argSymbol");
     if (arg.isBlank()) {
@@ -30,7 +30,7 @@ public class FunctionVariable extends Variable {
       DeclarationSite sourceWriteSite,
       String argSymbol,
       DeclarationSite argDeclarationSite,
-      ArabicBASICParser.ExpressionContext body) {
+      ArabicBASIC.ExpressionContext body) {
     super(
         Objects.requireNonNull(symbol, "symbol"),
         Objects.requireNonNull(value, "value"),
@@ -44,7 +44,7 @@ public class FunctionVariable extends Variable {
     this.body = Objects.requireNonNull(body, "body");
   }
 
-  public ArabicBASICParser.ExpressionContext getBody() {
+  public ArabicBASIC.ExpressionContext getBody() {
     return body;
   }
 

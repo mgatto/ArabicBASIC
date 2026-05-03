@@ -29,7 +29,7 @@ class ArabicBasicDeclarationSiteTest {
   private static ArabicBasicRuntimeException interpretExpectingFailure(String source) {
     Map<String, Variable> globalScope = new LinkedHashMap<>();
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     InterpreterVisitor visitor =
         new InterpreterVisitor(arabicLocale(), Locale.ENGLISH, globalScope, false);
     return assertThrows(
@@ -103,7 +103,7 @@ class ArabicBasicDeclarationSiteTest {
         """;
     Map<String, Variable> globalScope = new LinkedHashMap<>();
     ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromString(source, "<test>"));
-    ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
     InterpreterVisitor visitor =
         new InterpreterVisitor(arabicLocale(), Locale.forLanguageTag("ar"), globalScope, false);
     ArabicBasicRuntimeException ex =

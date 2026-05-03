@@ -101,7 +101,7 @@ public class App implements Callable<Integer> {
     try {
       /* create an input stream from the string */
       ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromPath(source));
-      ArabicBASICParser parser = new ArabicBASICParser(new CommonTokenStream(lexer));
+      ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
 
       /* my custom error listener is needed for cleaner, and Arabic error messages.
        * However, TODO it throws a cancellation exception even on resolved ambiguities which is

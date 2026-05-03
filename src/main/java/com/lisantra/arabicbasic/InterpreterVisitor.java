@@ -55,7 +55,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new ArabicBasicRuntimeException(body, site);
   }
 
-  public Object visitProgram(ArabicBASICParser.ProgramContext ctx) {
+  public Object visitProgram(ArabicBASIC.ProgramContext ctx) {
     if (showDebug)
       System.out.println("I visited Program");
 
@@ -63,21 +63,21 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   /* This is where we'd implement lexical block scope if we wanted */
-  public Object visitBlock(ArabicBASICParser.BlockContext ctx) {
+  public Object visitBlock(ArabicBASIC.BlockContext ctx) {
     if (showDebug)
       System.out.println("I visited Block");
 
     return visitChildren(ctx);
   }
 
-  public Object visitStatement(ArabicBASICParser.StatementContext ctx) {
+  public Object visitStatement(ArabicBASIC.StatementContext ctx) {
     if (showDebug)
       System.out.println("I visited Statement");
 
     return visitChildren(ctx);
   }
 
-  public Void visitSimpleAssignment(ArabicBASICParser.SimpleAssignmentContext ctx) {
+  public Void visitSimpleAssignment(ArabicBASIC.SimpleAssignmentContext ctx) {
     if (showDebug)
       System.out.println("I visited Simple Assignment");
 
@@ -148,7 +148,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return null;
   }
 
-  public Void visitArrayAssignment(ArabicBASICParser.ArrayAssignmentContext ctx) {
+  public Void visitArrayAssignment(ArabicBASIC.ArrayAssignmentContext ctx) {
     if (showDebug)
       System.out.println("I visited Array Assignment");
 
@@ -225,11 +225,11 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return null;
   }
 
-  public Value visitNested(ArabicBASICParser.NestedContext ctx) {
+  public Value visitNested(ArabicBASIC.NestedContext ctx) {
     return (Value) visit(ctx.expression());
   }
 
-  public Value visitUnary(ArabicBASICParser.UnaryContext ctx) {
+  public Value visitUnary(ArabicBASIC.UnaryContext ctx) {
     Value expr = (Value) visit(ctx.expression());
     Double exprVal = makeNumber(expr, DeclarationSite.from(ctx));
 
@@ -242,7 +242,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new Value(-exprVal, expr.getOriginalType());
   }
 
-  public Value visitAddSub(ArabicBASICParser.AddSubContext ctx) {
+  public Value visitAddSub(ArabicBASIC.AddSubContext ctx) {
     Value left = (Value) visit(ctx.expression(0));
     Value right = (Value) visit(ctx.expression(1));
 
@@ -342,7 +342,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * ctx}.
    */
   @Override
-  public Value visitModulus(ArabicBASICParser.ModulusContext ctx) {
+  public Value visitModulus(ArabicBASIC.ModulusContext ctx) {
     Value left = (Value) visit(ctx.expression(0));
     Value right = (Value) visit(ctx.expression(1));
 
@@ -352,7 +352,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new Value(leftVal % rightVal, "Integer");
   }
 
-  public Value visitMulDiv(ArabicBASICParser.MulDivContext ctx) {
+  public Value visitMulDiv(ArabicBASIC.MulDivContext ctx) {
     Value left = (Value) visit(ctx.expression(0));
     Value right = (Value) visit(ctx.expression(1));
 
@@ -374,7 +374,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new Value(leftVal / rightVal, resultType);
   }
 
-  public Value visitExponentation(ArabicBASICParser.ExponentationContext ctx) {
+  public Value visitExponentation(ArabicBASIC.ExponentationContext ctx) {
     Value base = (Value) visit(ctx.expression(0));
     Value exponent = (Value) visit(ctx.expression(1));
 
@@ -396,7 +396,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * @param ctx
    * @return the value associated with the var name
    */
-  public Value visitName(ArabicBASICParser.NameContext ctx) {
+  public Value visitName(ArabicBASIC.NameContext ctx) {
     if (showDebug)
       System.out.println("I visited Identifier");
 
@@ -410,7 +410,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Value visitArrayAccess(ArabicBASICParser.ArrayAccessContext ctx) {
+  public Value visitArrayAccess(ArabicBASIC.ArrayAccessContext ctx) {
     if (showDebug)
       System.out.println("I visited array access");
 
@@ -440,7 +440,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new Value(targetArray.get(idx), elementsType);
   }
 
-  public Value visitNumeric(ArabicBASICParser.NumericContext ctx) {
+  public Value visitNumeric(ArabicBASIC.NumericContext ctx) {
     // all get treated as Double anyways, but let's track the original type
 
     // Double.valueOf causes NumberFormat exception with Arabic numbers
@@ -469,16 +469,16 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     }
   }
 
-  public Value visitText(ArabicBASICParser.TextContext ctx) {
+  public Value visitText(ArabicBASIC.TextContext ctx) {
     return new Value(ctx.STRING().getText(), "String");
   }
 
-  public Value visitBool(ArabicBASICParser.BoolContext ctx) {
+  public Value visitBool(ArabicBASIC.BoolContext ctx) {
     boolean bool = "صحيح".equals(ctx.getText());
     return new Value(bool, "Boolean");
   }
 
-  public Value visitArrayCreation(ArabicBASICParser.ArrayCreationContext ctx) {
+  public Value visitArrayCreation(ArabicBASIC.ArrayCreationContext ctx) {
     if (showDebug)
       System.out.println("I visited Array Creation");
 
@@ -495,7 +495,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new Value(newArray, "Array");
   }
 
-  public Integer visitArraySize(ArabicBASICParser.ArraySizeContext ctx) {
+  public Integer visitArraySize(ArabicBASIC.ArraySizeContext ctx) {
     Value size = (Value) visit(ctx.expression());
 
     // 2. ensure it is numeric
@@ -506,7 +506,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return ((Double) size.getVal()).intValue();
   }
 
-  public Integer visitSubscript(ArabicBASICParser.SubscriptContext ctx) {
+  public Integer visitSubscript(ArabicBASIC.SubscriptContext ctx) {
     // OK, there are no children to visit, so work with the Terminals...
     Integer index = null;
 
@@ -535,7 +535,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return index;
   }
 
-  public Void visitConditionalBlock(ArabicBASICParser.ConditionalBlockContext ctx) {
+  public Void visitConditionalBlock(ArabicBASIC.ConditionalBlockContext ctx) {
     // TODO may need Apache Commons library BooleanUtils class
     Boolean condition = null;
 
@@ -595,7 +595,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * ctx}.
    */
   @Override
-  public Void visitSingleLineConditional(ArabicBASICParser.SingleLineConditionalContext ctx) {
+  public Void visitSingleLineConditional(ArabicBASIC.SingleLineConditionalContext ctx) {
     Boolean condition = null;
 
     Object conditionalExpr = visit(ctx.booleanExpression()); // it could be Boolean or Value from atomicBoolean rule
@@ -614,7 +614,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Boolean visitComparitiveBoolean(ArabicBASICParser.ComparitiveBooleanContext ctx) {
+  public Boolean visitComparitiveBoolean(ArabicBASIC.ComparitiveBooleanContext ctx) {
     DeclarationSite opSite = DeclarationSite.from(ctx.comp);
 
     Object l = visit(ctx.booleanExpression(0));
@@ -681,7 +681,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Boolean visitLogicalAnd(ArabicBASICParser.LogicalAndContext ctx) {
+  public Boolean visitLogicalAnd(ArabicBASIC.LogicalAndContext ctx) {
     Boolean left = coerceCondition(visit(ctx.booleanExpression(0)));
     Boolean right = coerceCondition(visit(ctx.booleanExpression(1)));
 
@@ -694,7 +694,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Boolean visitLogicalOr(ArabicBASICParser.LogicalOrContext ctx) {
+  public Boolean visitLogicalOr(ArabicBASIC.LogicalOrContext ctx) {
     Boolean left = coerceCondition(visit(ctx.booleanExpression(0)));
     Boolean right = coerceCondition(visit(ctx.booleanExpression(1)));
 
@@ -707,12 +707,12 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Boolean visitNestedBoolean(ArabicBASICParser.NestedBooleanContext ctx) {
+  public Boolean visitNestedBoolean(ArabicBASIC.NestedBooleanContext ctx) {
     return coerceCondition(visit(ctx.booleanExpression()));
   }
 
   @Override
-  public Boolean visitNegatingBoolean(ArabicBASICParser.NegatingBooleanContext ctx) {
+  public Boolean visitNegatingBoolean(ArabicBASIC.NegatingBooleanContext ctx) {
     Boolean test = coerceCondition(visit(ctx.booleanExpression()));
     return !test; // TODO should I copy by value? or does it even matter?
   }
@@ -725,7 +725,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * @return
    */
   @Override
-  public Value visitAtomicBoolean(ArabicBASICParser.AtomicBooleanContext ctx) {
+  public Value visitAtomicBoolean(ArabicBASIC.AtomicBooleanContext ctx) {
     /* it could be visitName(), visitNumeric() or visitText() */
     // Object x = visit(ctx.variable(ctx));
     // how to tell if it should return a value or be evaulated as a Boolean??
@@ -735,7 +735,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Void visitPrint(ArabicBASICParser.PrintContext ctx) {
+  public Void visitPrint(ArabicBASIC.PrintContext ctx) {
     if (showDebug)
       System.out.println("I visited Print");
 
@@ -820,7 +820,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Void visitInput(ArabicBASICParser.InputContext ctx) {
+  public Void visitInput(ArabicBASIC.InputContext ctx) {
     // TODO Maybe a "next?" default non-first prompt would be nice?
 
     ListIterator<Token> varTokenIter = ctx.var.listIterator();
@@ -891,7 +891,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * value"
    */
   @Override
-  public Void visitForLoop(ArabicBASICParser.ForLoopContext ctx) {
+  public Void visitForLoop(ArabicBASIC.ForLoopContext ctx) {
 
     int lower = Integer.parseInt(ctx.lower.getText());
 
@@ -963,7 +963,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * ctx}.
    */
   @Override
-  public Void visitWhileLoop(ArabicBASICParser.WhileLoopContext ctx) {
+  public Void visitWhileLoop(ArabicBASIC.WhileLoopContext ctx) {
     // assume true, so we can enter the loop; can be "Break"ed if condition
     // evaluates to false
     // before executing "block"
@@ -995,18 +995,18 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * ctx}.
    */
   @Override
-  public Void visitDefineSingleLineFunction(ArabicBASICParser.DefineSingleLineFunctionContext ctx) {
+  public Void visitDefineSingleLineFunction(ArabicBASIC.DefineSingleLineFunctionContext ctx) {
     // 1. get funcName
     String id = ctx.funcName.getText();
     Symbol s = new FunctionSymbol(id);
 
     // 2. get arg and visit(identifier)
-    ArabicBASICParser.VariableContext argCtx = ctx.variable();
+    ArabicBASIC.VariableContext argCtx = ctx.variable();
     String argumentPlaceholder = argCtx.getText();
     DeclarationSite argDeclarationSite = declarationSiteForFormalParameter(argCtx);
 
     // 3. get the body/expression
-    ArabicBASICParser.ExpressionContext functionExpression = ctx.expression();
+    ArabicBASIC.ExpressionContext functionExpression = ctx.expression();
 
     // 4. save the expression
     globalScope.put(
@@ -1031,7 +1031,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * ctx}.
    */
   @Override
-  public Value visitCallFunction(ArabicBASICParser.CallFunctionContext ctx) {
+  public Value visitCallFunction(ArabicBASIC.CallFunctionContext ctx) {
     // 1. retrieve function from the symbol table
     String fnName = ctx.funcName.getText();
     Object fn = globalScope.get(fnName);
@@ -1084,7 +1084,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @Override
-  public Value visitStringFunction(ArabicBASICParser.StringFunctionContext ctx) {
+  public Value visitStringFunction(ArabicBASIC.StringFunctionContext ctx) {
     // 4. get name
     String operation = ctx.name.getText();
 
@@ -1182,7 +1182,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
    * ctx}.
    */
   @Override
-  public Value visitMathFunction(ArabicBASICParser.MathFunctionContext ctx) {
+  public Value visitMathFunction(ArabicBASIC.MathFunctionContext ctx) {
     // 2. construct a return value
     Value retValue = new Value(null, "Real"); // default to REAL
 
@@ -1258,11 +1258,11 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
 
   /**
    * Formal parameters use {@code variable} in the grammar; only an {@link
-   * ArabicBASICParser.NameContext} has an identifier token to anchor a declaration site.
+   * ArabicBASIC.NameContext} has an identifier token to anchor a declaration site.
    */
   private static DeclarationSite declarationSiteForFormalParameter(
-      ArabicBASICParser.VariableContext varCtx) {
-    if (varCtx instanceof ArabicBASICParser.NameContext nameCtx) {
+      ArabicBASIC.VariableContext varCtx) {
+    if (varCtx instanceof ArabicBASIC.NameContext nameCtx) {
       return DeclarationSite.from(nameCtx.IDENTIFIER().getSymbol());
     }
 
@@ -1270,7 +1270,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   @SuppressWarnings("unchecked")
-  private Deque<Value> requireStack(ArabicBASICParser.VariableContext ctx, DeclarationSite site) {
+  private Deque<Value> requireStack(ArabicBASIC.VariableContext ctx, DeclarationSite site) {
     Object visited = visit(ctx);
     if (!(visited instanceof Value stackValue)) {
       throw error("error.notAStack", site, ctx.getText());
@@ -1282,8 +1282,8 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
   }
 
   private void markStackWriteIfNamed(
-      ArabicBASICParser.VariableContext ctx, DeclarationSite sourceWriteSite) {
-    if (ctx instanceof ArabicBASICParser.NameContext nameCtx) {
+      ArabicBASIC.VariableContext ctx, DeclarationSite sourceWriteSite) {
+    if (ctx instanceof ArabicBASIC.NameContext nameCtx) {
       String id = nameCtx.IDENTIFIER().getText();
       Variable v = globalScope.get(id);
       if (v != null) {
@@ -1309,11 +1309,11 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return false;
   }
 
-  public Value visitStackFactory(ArabicBASICParser.StackFactoryContext ctx) {
+  public Value visitStackFactory(ArabicBASIC.StackFactoryContext ctx) {
     return new Value(new ArrayDeque<Value>(), "Stack");
   }
 
-  public Value visitStackPushFunction(ArabicBASICParser.StackPushFunctionContext ctx) {
+  public Value visitStackPushFunction(ArabicBASIC.StackPushFunctionContext ctx) {
     DeclarationSite site = DeclarationSite.from(ctx);
     Deque<Value> stack = requireStack(ctx.stack, site);
     Value pushed = (Value) visit(ctx.value);
@@ -1322,7 +1322,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return new Value((double) stack.size(), "Integer");
   }
 
-  public Value visitStackPopFunction(ArabicBASICParser.StackPopFunctionContext ctx) {
+  public Value visitStackPopFunction(ArabicBASIC.StackPopFunctionContext ctx) {
     DeclarationSite site = DeclarationSite.from(ctx);
     Deque<Value> stack = requireStack(ctx.stack, site);
     Value popped = stack.pollLast();
@@ -1333,7 +1333,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return copyValue(popped);
   }
 
-  public Value visitStackPeekFunction(ArabicBASICParser.StackPeekFunctionContext ctx) {
+  public Value visitStackPeekFunction(ArabicBASIC.StackPeekFunctionContext ctx) {
     Deque<Value> stack = requireStack(ctx.stack, DeclarationSite.from(ctx));
     Value peeked = stack.peekLast();
     if (peeked == null) {
@@ -1342,7 +1342,7 @@ public class InterpreterVisitor extends ArabicBASICBaseVisitor<Object> {
     return copyValue(peeked);
   }
 
-  public Value visitStackEmptyFunction(ArabicBASICParser.StackEmptyFunctionContext ctx) {
+  public Value visitStackEmptyFunction(ArabicBASIC.StackEmptyFunctionContext ctx) {
     Deque<Value> stack = requireStack(ctx.stack, DeclarationSite.from(ctx));
     return new Value(stack.isEmpty(), "Boolean");
   }
