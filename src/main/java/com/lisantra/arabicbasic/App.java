@@ -1,5 +1,8 @@
 package com.lisantra.arabicbasic;
 
+import com.lisantra.arabicbasic.debug.UnicodeDebugFormatter;
+import com.lisantra.arabicbasic.debug.UnicodeDebugInfo;
+import com.lisantra.arabicbasic.debug.UnicodeInspector;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.DiagnosticErrorListener;
@@ -8,6 +11,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -20,7 +24,7 @@ import java.util.concurrent.Callable;
     versionProvider = ManifestVersionProvider.class,
     resourceBundle = "Messages")
 public class App implements Callable<Integer> {
-  @CommandLine.Parameters(index = "0", descriptionKey = "fileParam")
+  @CommandLine.Parameters(index = "0", arity = "0..1", descriptionKey = "fileParam")
   private File file;
 
   @CommandLine.Option(
@@ -32,6 +36,12 @@ public class App implements Callable<Integer> {
 
   @CommandLine.Option(names = "--locale", descriptionKey = "localeParam", description = "Language tag for interpreter runtime error messages (e.g. en, en-US, ar). Default follows JVM locale after Arabic setup.")
   private String messageLocaleTag;
+
+  @CommandLine.Option(
+      names = {"-u", "--unicode-map"},
+      paramLabel = "<file>",
+      descriptionKey = "unicodeMapParam")
+  private File unicodeMapFile;
 
   /**
    * Runs the main interpreter from the command line.
@@ -47,10 +57,31 @@ public class App implements Callable<Integer> {
         messageLocaleOverride = parseMessageLocaleTag(messageLocaleTag.trim());
       }
 
+      if (unicodeMapFile != null) {
+        return runUnicodeMap(unicodeMapFile.toPath());
+      }
+      if (file == null) {
+        System.err.println("Missing required parameter: <file>");
+        return 2;
+      }
+
       return runScript(file.toPath(), showDebug, messageLocaleOverride);
     } catch (IllegalArgumentException e) {
       System.err.println(e.getMessage());
       return 2;
+    }
+  }
+
+  static int runUnicodeMap(Path source) {
+    try {
+      String input = Files.readString(source);
+      UnicodeDebugInfo info = UnicodeInspector.inspect(input);
+      System.out.println(UnicodeDebugFormatter.toMultilineText(info));
+      return 0;
+    } catch (Exception e) {
+      System.err.println("Unable to read unicode-map file: " + source);
+      System.err.println(e.getMessage());
+      return 1;
     }
   }
 
