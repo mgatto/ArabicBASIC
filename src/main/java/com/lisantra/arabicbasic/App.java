@@ -3,6 +3,7 @@ package com.lisantra.arabicbasic;
 import com.lisantra.arabicbasic.debug.UnicodeDebugFormatter;
 import com.lisantra.arabicbasic.debug.UnicodeDebugInfo;
 import com.lisantra.arabicbasic.debug.UnicodeInspector;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.DiagnosticErrorListener;
@@ -10,7 +11,10 @@ import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import picocli.CommandLine;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -24,6 +28,9 @@ import java.util.concurrent.Callable;
     versionProvider = ManifestVersionProvider.class,
     resourceBundle = "Messages")
 public class App implements Callable<Integer> {
+  private static final String REPL_PROMPT = "arabicbasic> ";
+  private static final String REPL_WELCOME = "ArabicBASIC REPL. Type :exit to quit.";
+
   @CommandLine.Parameters(index = "0", arity = "0..1", descriptionKey = "fileParam")
   private File file;
 
@@ -43,6 +50,9 @@ public class App implements Callable<Integer> {
       descriptionKey = "unicodeMapParam")
   private File unicodeMapFile;
 
+  @CommandLine.Option(names = {"-r", "--repl"}, descriptionKey = "replParam")
+  private boolean replMode;
+
   /**
    * Runs the main interpreter from the command line.
    *
@@ -60,9 +70,9 @@ public class App implements Callable<Integer> {
       if (unicodeMapFile != null) {
         return runUnicodeMap(unicodeMapFile.toPath());
       }
-      if (file == null) {
-        System.err.println("Missing required parameter: <file>");
-        return 2;
+
+      if (replMode || file == null) {
+        return runRepl(showDebug, messageLocaleOverride);
       }
 
       return runScript(file.toPath(), showDebug, messageLocaleOverride);
@@ -130,39 +140,15 @@ public class App implements Callable<Integer> {
     // If so, then remember that Scope has one Symbol table.
 
     try {
-      /* create an input stream from the string */
-      ArabicBASICLexer lexer = new ArabicBASICLexer(CharStreams.fromPath(source));
-      ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
-
-      /* my custom error listener is needed for cleaner, and Arabic error messages.
-       * However, TODO it throws a cancellation exception even on resolved ambiguities which is
-       *           obviously not desirable. */
-      //    lexer.removeErrorListeners();
-      //    lexer.addErrorListener(BASICErrorListener.INSTANCE);
-      //    parser.removeErrorListeners();
-      //    parser.addErrorListener(BASICErrorListener.INSTANCE);
-
-      /* listen and warn for ambiguous grammar, but recover and continue if possible */
-      if (showDebug) {
-        parser.addErrorListener(new DiagnosticErrorListener());
-        parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION);
-      }
-
-      /* Instantiate the parse tree */
-      ParseTree programTree = parser.program();
-
-      /* Instantiate my visitor class, which is the actual interpreter */
-      InterpreterVisitor interpreter =
-          new InterpreterVisitor(arabicLocale, messageLocale, globalScope, showDebug);
-
-      /* Walk the interpreter through the parse tree */
-      interpreter.visit(programTree);
-
-      if (showDebug) System.out.println(globalScope);
-      if (showDebug) System.out.println("Finished running ArabicBASIC script");
-
-      /* Be a good Unix system citizen and return a numerical exit code */
-      return 0;
+      int exitCode =
+          runSource(
+              CharStreams.fromPath(source),
+              arabicLocale,
+              messageLocale,
+              globalScope,
+              showDebug,
+              true);
+      return exitCode;
     } catch (ArabicBasicRuntimeException e) {
       System.err.println(e.getMessage());
       if (showDebug) {
@@ -180,6 +166,133 @@ public class App implements Callable<Integer> {
     } finally {
       Locale.setDefault(previousDefault);
     }
+  }
+
+  static int runRepl(boolean showDebug, Locale messageLocaleOverride) {
+    Locale previousDefault = Locale.getDefault();
+    Locale arabicLocale =
+        new Locale.Builder()
+            .setLanguage("ar")
+            .setExtension(Locale.UNICODE_LOCALE_EXTENSION, "nu-arab")
+            .build();
+
+    Locale.setDefault(arabicLocale);
+    Locale messageLocale =
+        messageLocaleOverride != null ? messageLocaleOverride : Locale.getDefault();
+    Map<String, Variable> globalScope = new LinkedHashMap<>();
+    BufferedReader reader =
+        new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+
+    try {
+      System.out.println(REPL_WELCOME);
+      while (true) {
+        System.out.print(REPL_PROMPT);
+        String input = reader.readLine();
+        if (input == null) {
+          break;
+        }
+
+        String trimmed = input.trim();
+        if (trimmed.isEmpty()) {
+          continue;
+        }
+        if (isReplExitCommand(trimmed)) {
+          break;
+        }
+
+        try {
+          int result =
+              runSource(
+                  CharStreams.fromString(ensureTrailingLineBreak(input)),
+                  arabicLocale,
+                  messageLocale,
+                  globalScope,
+                  showDebug,
+                  false);
+          if (result != 0) {
+            System.err.println("REPL input had parse errors.");
+          }
+        } catch (ArabicBasicRuntimeException e) {
+          System.err.println(e.getMessage());
+          if (showDebug) {
+            e.printStackTrace();
+          }
+        } catch (Exception e) {
+          System.err.println(e.getMessage());
+          if (showDebug) {
+            e.printStackTrace();
+          }
+        }
+      }
+      return 0;
+    } catch (Exception e) {
+      System.err.println(e.getMessage());
+      if (showDebug) {
+        e.printStackTrace();
+      }
+      return 1;
+    } finally {
+      Locale.setDefault(previousDefault);
+    }
+  }
+
+  private static int runSource(
+      CharStream source,
+      Locale arabicLocale,
+      Locale messageLocale,
+      Map<String, Variable> globalScope,
+      boolean showDebug,
+      boolean printDebugSummary) {
+    /* create an input stream from the string */
+    ArabicBASICLexer lexer = new ArabicBASICLexer(source);
+    ArabicBASIC parser = new ArabicBASIC(new CommonTokenStream(lexer));
+
+    /* my custom error listener is needed for cleaner, and Arabic error messages.
+     * However, TODO it throws a cancellation exception even on resolved ambiguities which is
+     *           obviously not desirable. */
+    //    lexer.removeErrorListeners();
+    //    lexer.addErrorListener(BASICErrorListener.INSTANCE);
+    //    parser.removeErrorListeners();
+    //    parser.addErrorListener(BASICErrorListener.INSTANCE);
+
+    /* listen and warn for ambiguous grammar, but recover and continue if possible */
+    if (showDebug) {
+      parser.addErrorListener(new DiagnosticErrorListener());
+      parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION);
+    }
+
+    /* Instantiate the parse tree */
+    ParseTree programTree = parser.program();
+    if (parser.getNumberOfSyntaxErrors() > 0) {
+      return 1;
+    }
+
+    /* Instantiate my visitor class, which is the actual interpreter */
+    InterpreterVisitor interpreter =
+        new InterpreterVisitor(arabicLocale, messageLocale, globalScope, showDebug);
+
+    /* Walk the interpreter through the parse tree */
+    interpreter.visit(programTree);
+
+    if (showDebug && printDebugSummary) System.out.println(globalScope);
+    if (showDebug && printDebugSummary) System.out.println("Finished running ArabicBASIC script");
+
+    /* Be a good Unix system citizen and return a numerical exit code */
+    return 0;
+  }
+
+  private static boolean isReplExitCommand(String trimmedInput) {
+    return ":exit".equalsIgnoreCase(trimmedInput)
+        || ":quit".equalsIgnoreCase(trimmedInput)
+        || "exit".equalsIgnoreCase(trimmedInput)
+        || "quit".equalsIgnoreCase(trimmedInput);
+  }
+
+  private static String ensureTrailingLineBreak(String input) {
+    if (input.endsWith("\n") || input.endsWith("\r")) {
+      return input;
+    }
+    return input + System.lineSeparator();
   }
 
   /**
