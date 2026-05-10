@@ -3,7 +3,7 @@
 A short tutorial for English speakers on how to write programs in ArabicBASIC. Save your files as **UTF-8** with the extension `.bas` and run them with:
 
 ```bash
-java -jar target/ArabicBASIC-0.7.0-release-jar-with-dependencies.jar myscript.bas
+java -jar target/ArabicBASIC-0.7.2-jar-with-dependencies.jar myscript.bas
 ```
 
 ---

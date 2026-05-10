@@ -10,7 +10,7 @@ UTF-8 **`.bas`** scripts for manual runs and automated smoke tests.
 Run from the repo root after `mvn package`:
 
 ```bash
-java -jar target/ArabicBASIC-0.7.0-release-jar-with-dependencies.jar examples/CONDITIONAL_Ar.bas
+java -jar target/ArabicBASIC-0.7.2-jar-with-dependencies.jar examples/CONDITIONAL_Ar.bas
 ```
 
-(`0.7.0-release` follows `<version>` in `pom.xml`.)
+(`0.7.2` follows `<version>` in `pom.xml`.)
