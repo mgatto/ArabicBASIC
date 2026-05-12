@@ -28,7 +28,9 @@ import java.util.concurrent.Callable;
     versionProvider = ManifestVersionProvider.class,
     resourceBundle = "Messages")
 public class App implements Callable<Integer> {
-  private static final String REPL_PROMPT = "arabicbasic> ";
+  // Encourage RTL rendering for interactive Arabic input after an ASCII prompt.
+  private static final String RTL_MARK = "\u200F";
+  private static final String REPL_PROMPT = "arabicbasic> " + RTL_MARK;
   private static final String REPL_WELCOME = "ArabicBASIC REPL. Type :exit to quit.";
 
   @CommandLine.Parameters(index = "0", arity = "0..1", descriptionKey = "fileParam")

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 class AppReplModeTest {
+  private static final String RTL_MARK = "\u200F";
 
   @Test
   void noArgsStartsReplMode() {
@@ -29,7 +30,7 @@ class AppReplModeTest {
     CliRunResult result = runCli(new String[] {"--repl"}, ":quit\n");
 
     assertEquals(0, result.exitCode());
-    assertTrue(result.stdout().contains("arabicbasic> "), () -> "stdout: " + result.stdout());
+    assertTrue(result.stdout().contains("arabicbasic> " + RTL_MARK), () -> "stdout: " + result.stdout());
   }
 
   @Test
