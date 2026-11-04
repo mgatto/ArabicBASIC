@@ -19,8 +19,8 @@
         <module name="ARABASIC2" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="17">
-      <module name="ARABASIC2" target="11" />
+    <bytecodeTargetLevel target="25">
+      <module name="ARABASIC2" target="25" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
