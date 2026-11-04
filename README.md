@@ -83,7 +83,7 @@ mvn clean package
 That produces a dependency-fat JAR:
 
 ```text
-target/ArabicBASIC-0.7.3-jar-with-dependencies.jar
+target/ArabicBASIC-<version>-jar-with-dependencies.jar
 ```
 
 (The version segment matches `<version>` in `pom.xml`.)
@@ -91,13 +91,13 @@ target/ArabicBASIC-0.7.3-jar-with-dependencies.jar
 Run an Arabic script:
 
 ```bash
-java -jar target/ArabicBASIC-0.7.3-jar-with-dependencies.jar examples/CONDITIONAL_Ar.bas
+java -jar target/ArabicBASIC-*-jar-with-dependencies.jar examples/CONDITIONAL_Ar.bas
 ```
 
 With debug:
 
 ```bash
-java -jar target/ArabicBASIC-0.7.3-jar-with-dependencies.jar --debug examples/INPUT_Ar.bas
+java -jar target/ArabicBASIC-*-jar-with-dependencies.jar --debug examples/INPUT_Ar.bas
 ```
 
 Automated smoke tests (`examples/` Arabic scripts) run with:

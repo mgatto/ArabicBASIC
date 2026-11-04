@@ -1,0 +1,4 @@
+{
+  "templatePath": "scripts/changelog.hbs",
+  "prependTemplatePath": "scripts/changelog.hbs"
+}

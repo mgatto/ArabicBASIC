@@ -1,0 +1,34 @@
+{{#tags}}
+## [{{name}}](https://github.com/mgatto/ArabicBASIC/compare/{{releaseFrom}}...{{name}}) ({{releaseDate}})
+{{#ifContainsBreaking commits}}
+
+### Breaking Changes
+
+{{#commits}}
+{{#ifCommitBreaking .}}
+* {{#eachCommitScope .}}**{{.}}:** {{/eachCommitScope}}{{{commitDescription .}}} ([{{hash}}](https://github.com/mgatto/ArabicBASIC/commit/{{hashFull}}))
+{{/ifCommitBreaking}}
+{{/commits}}
+{{/ifContainsBreaking}}
+{{#ifContainsType commits type='feat'}}
+
+### Features
+
+{{#commits}}
+{{#ifCommitType . type='feat'}}
+* {{#eachCommitScope .}}**{{.}}:** {{/eachCommitScope}}{{{commitDescription .}}} ([{{hash}}](https://github.com/mgatto/ArabicBASIC/commit/{{hashFull}}))
+{{/ifCommitType}}
+{{/commits}}
+{{/ifContainsType}}
+{{#ifContainsType commits type='fix'}}
+
+### Bug Fixes
+
+{{#commits}}
+{{#ifCommitType . type='fix'}}
+* {{#eachCommitScope .}}**{{.}}:** {{/eachCommitScope}}{{{commitDescription .}}} ([{{hash}}](https://github.com/mgatto/ArabicBASIC/commit/{{hashFull}}))
+{{/ifCommitType}}
+{{/commits}}
+{{/ifContainsType}}
+
+{{/tags}}
