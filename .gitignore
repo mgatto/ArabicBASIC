@@ -1,3 +1,6 @@
+.envrc
+AGENTS.md
+
 # --- Build (Maven) ---
 target/
 pom.xml.tag
@@ -75,3 +78,7 @@ $RECYCLE.BIN/
 /.lsp
 /.idea
 /.vscode
+
+# --- Local secrets / local tool config (never commit) ---
+.env
+opencode.json
