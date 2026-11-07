@@ -22,8 +22,8 @@ A standalone **interpreter** for Arabic BASIC: programs use **Arabic keywords an
 
 Helpful links:
 
-- OpenJDK install: https://openjdk.org/install/
-- Command-line basics: https://tutorial.djangogirls.org/en/intro_to_command_line/
+- OpenJDK install: <https://openjdk.org/install/>
+- Command-line basics: <https://tutorial.djangogirls.org/en/intro_to_command_line/>
 
 ---
 
@@ -40,7 +40,7 @@ Accepted orthographic aliases are intentionally limited. The parser accepts comm
 **Working examples** that match the current parser live under **`examples/`** (see [`examples/README.md`](examples/README.md)), alongside older numbered demos:
 
 | Scripts (Arabic syntax) | Rough purpose |
-|-------------------------|----------------|
+| ------------------------- | ---------------- |
 | `examples/CONDITIONAL_Ar.bas` | Simple `اذا` / `ختام اذا` |
 | `examples/INPUT_Ar.bas` | `ادخل`, loop, array |
 | `examples/LOOP_Ar.bas` | Loop-style sample |
