@@ -1,0 +1,4 @@
+LET N = 0
+IF N < 14 THEN
+	PRINT "Yes"
+END IF
