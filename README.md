@@ -1,5 +1,7 @@
 # ArabicBASIC
 
+![Project Hero Image](arabicbasic.png)
+
 <!-- *الحوسبة الآمنة بلغتك* -->
 ## برمجة آمنة بلغتك الأم
 
