@@ -1,0 +1,315 @@
+name: Release
+
+# Builds GraalVM native executables on each target OS/CPU (Native Image cannot
+# cross-compile), then wraps them in installers:
+#   macOS   universal .pkg (arm64 + x64 merged with lipo)
+#   Windows Inno Setup .exe (x64)
+#
+# Triggers:
+#   - a published GitHub Release: builds and attaches the installers to it
+#   - manual run: builds and uploads workflow artifacts; set `upload` (and a `tag`
+#     naming an existing release) to also attach them to that release
+#
+# Signing is optional. Each signing step runs only when its secrets exist, so
+# unsigned builds work today and signing needs no workflow change later. See
+# docs/native-build-notes.md for the secret names.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag (e.g. v0.7.3) to build from and attach to. Empty = build the selected ref and upload artifacts only."
+        required: false
+        type: string
+      upload:
+        description: "Attach the installers to the release named by `tag`"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  # Release tag being built, if any (empty for a manual run with no tag).
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  # JVM gate: unit tests must pass, and the tag must match pom.xml's version.
+  verify:
+    name: Test and resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG || github.sha }}
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Read version from pom.xml
+        id: version
+        run: |
+          version="$(mvn -B -q -DforceStdout help:evaluate -Dexpression=project.version)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "pom.xml version: $version"
+
+      - name: Check tag matches pom.xml version
+        if: env.RELEASE_TAG != ''
+        run: |
+          expected="v${{ steps.version.outputs.version }}"
+          case "$RELEASE_TAG" in
+            "$expected"|"$expected"-*) ;;
+            *) echo "Tag '$RELEASE_TAG' does not match pom.xml version (expected $expected or $expected-<prerelease>)"; exit 1 ;;
+          esac
+
+      - name: Upload requires a tag
+        if: github.event_name == 'workflow_dispatch' && inputs.upload && inputs.tag == ''
+        run: |
+          echo "Set the 'tag' input when 'upload' is enabled."
+          exit 1
+
+      - name: Unit tests
+        run: mvn -B test
+
+  native:
+    name: Native image (${{ matrix.name }})
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macos-arm64, os: macos-latest, exe: arabicbasic }
+          - { name: macos-x64, os: macos-15-intel, exe: arabicbasic }
+          - { name: windows-x64, os: windows-latest, exe: arabicbasic.exe }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG || github.sha }}
+
+      # GraalVM Community Edition (GPLv2 + Classpath Exception): no restrictions on
+      # redistributing the resulting binaries.
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: graalvm-community
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: maven
+
+      - name: Build native executable
+        shell: bash
+        run: mvn -B -Pnative -DskipTests package
+
+      # Native output must match the JVM's. Windows is checked for exit status and
+      # line counts only: Java encodes redirected stdout with the console code page
+      # there, so Arabic text cannot be compared byte-for-byte in CI.
+      - name: Smoke test
+        shell: bash
+        run: |
+          exe="target/${{ matrix.exe }}"
+          "$exe" --version | tee version.txt
+          grep -q "${{ needs.verify.outputs.version }}" version.txt
+          "$exe" examples/STACK_Ar.bas > /dev/null
+          lines="$("$exe" examples/LOOP_Ar.bas | wc -l)"
+          [ "$lines" -ge 10 ] || { echo "LOOP_Ar printed $lines lines"; exit 1; }
+          if [ "$RUNNER_OS" != "Windows" ]; then
+            jar="$(ls target/ArabicBASIC-*-jar-with-dependencies.jar)"
+            for f in CONDITIONAL_Ar LOOP_Ar STACK_Ar; do
+              java -jar "$jar" "examples/$f.bas" > "jvm-$f.txt"
+              "$exe" "examples/$f.bas" > "native-$f.txt"
+              cmp "jvm-$f.txt" "native-$f.txt"
+            done
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.name }}
+          path: target/${{ matrix.exe }}
+          if-no-files-found: error
+
+  package-macos:
+    name: macOS universal .pkg
+    needs: [verify, native]
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      APPLE_APP_CERT_P12_BASE64: ${{ secrets.APPLE_APP_CERT_P12_BASE64 }}
+      APPLE_INSTALLER_CERT_P12_BASE64: ${{ secrets.APPLE_INSTALLER_CERT_P12_BASE64 }}
+      APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG || github.sha }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: native-macos-*
+          path: native
+
+      # Only when the Apple Developer ID certificates are configured.
+      - name: Import signing certificates
+        if: env.APPLE_APP_CERT_P12_BASE64 != '' && env.APPLE_INSTALLER_CERT_P12_BASE64 != ''
+        run: |
+          keychain="$RUNNER_TEMP/build.keychain-db"
+          keychain_pw="$(uuidgen)"
+          security create-keychain -p "$keychain_pw" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_pw" "$keychain"
+          for name in APP INSTALLER; do
+            var="APPLE_${name}_CERT_P12_BASE64"
+            printf '%s' "${!var}" | base64 --decode > "$RUNNER_TEMP/$name.p12"
+            security import "$RUNNER_TEMP/$name.p12" -k "$keychain" -P "$APPLE_CERT_PASSWORD" \
+              -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild
+          done
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_pw" "$keychain"
+          existing="$(security list-keychains -d user | tr -d '"')"
+          # shellcheck disable=SC2086 # word splitting of the keychain list is intended
+          security list-keychains -d user -s "$keychain" $existing
+
+      # Signing / notarization variables are empty without secrets, which makes
+      # the script fall back to an ad-hoc signature and skip notarization.
+      - name: Build .pkg
+        env:
+          APPLE_APP_SIGN_IDENTITY: ${{ secrets.APPLE_APP_SIGN_IDENTITY }}
+          APPLE_INSTALLER_SIGN_IDENTITY: ${{ secrets.APPLE_INSTALLER_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          scripts/package-macos-pkg.sh "$VERSION" \
+            "dist/ArabicBASIC-$VERSION-macos-universal.pkg" \
+            native/native-macos-arm64/arabicbasic \
+            native/native-macos-x64/arabicbasic
+
+      # Prove the package installs the universal binary and the PATH symlink.
+      - name: Verify package contents
+        run: |
+          pkg="dist/ArabicBASIC-$VERSION-macos-universal.pkg"
+          pkgutil --expand-full "$pkg" expanded
+          exe="expanded/Payload/usr/local/lib/arabicbasic/arabicbasic"
+          lipo -archs "$exe" | tee archs.txt
+          grep -q arm64 archs.txt && grep -q x86_64 archs.txt
+          test -L expanded/Payload/usr/local/bin/arabicbasic
+          "$exe" --version | grep -q "$VERSION"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: installer-macos
+          path: dist/*.pkg
+          if-no-files-found: error
+
+  package-windows:
+    name: Windows setup .exe
+    needs: [verify, native]
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+      WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG || github.sha }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-windows-x64
+          path: native
+
+      # Optional Authenticode signing with a .pfx certificate. Replace this step
+      # (and the one after the installer build) if you adopt SignPath or Azure
+      # Artifact Signing instead; see docs/native-build-notes.md.
+      - name: Locate signtool and decode certificate
+        if: env.WINDOWS_CERT_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signtool) { throw "signtool.exe not found" }
+          "SIGNTOOL=$($signtool.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\codesign.pfx", [Convert]::FromBase64String($env:WINDOWS_CERT_PFX_BASE64))
+
+      - name: Sign arabicbasic.exe
+        if: env.WINDOWS_CERT_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          & $env:SIGNTOOL sign /fd SHA256 /f "$env:RUNNER_TEMP\codesign.pfx" /p $env:WINDOWS_CERT_PASSWORD `
+            /tr http://timestamp.digicert.com /td SHA256 native\arabicbasic.exe
+
+      # Inno Setup ships on the windows-latest image; install it if that changes.
+      - name: Ensure Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found" }
+          "ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & $env:ISCC "/DAppVersion=$env:VERSION" "/DSourceExe=$PWD\native\arabicbasic.exe" packaging\windows\arabicbasic.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item "target\installer\ArabicBASIC-$env:VERSION-windows-x64-setup.exe" dist\
+
+      - name: Sign installer
+        if: env.WINDOWS_CERT_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          & $env:SIGNTOOL sign /fd SHA256 /f "$env:RUNNER_TEMP\codesign.pfx" /p $env:WINDOWS_CERT_PASSWORD `
+            /tr http://timestamp.digicert.com /td SHA256 "dist\ArabicBASIC-$env:VERSION-windows-x64-setup.exe"
+
+      # Silent install into a scratch dir to prove the installer works end to end.
+      - name: Install and verify
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "ab-install"
+          $p = Start-Process -FilePath "dist\ArabicBASIC-$env:VERSION-windows-x64-setup.exe" `
+            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER","/DIR=$dir","/TASKS=addtopath" `
+            -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "installer exit code $($p.ExitCode)" }
+          & "$dir\arabicbasic.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "installed exe failed" }
+          $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+          if ($userPath -notlike "*$dir*") { throw "install dir missing from user PATH" }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: installer-windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  publish:
+    name: Checksums and attach to release
+    needs: [package-macos, package-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: installer-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create sha256sums.txt
+        working-directory: dist
+        run: |
+          sha256sum -- * > sha256sums.txt
+          cat sha256sums.txt
+
+      # Immutable releases are off for this repository, so assets can be
+      # (re)attached to the published release; --clobber makes reruns idempotent.
+      # This job never checks out the repo, so name it explicitly with --repo.
+      - name: Attach to release
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.upload && inputs.tag != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" dist/* --clobber --repo "${{ github.repository }}"

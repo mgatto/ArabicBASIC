@@ -15,7 +15,25 @@ A standalone **interpreter** for Arabic BASIC: programs use **Arabic keywords an
 
 ---
 
-## Requirements
+## Installing (no Java needed)
+
+Download an installer from the [latest release](https://github.com/mgatto/ArabicBASIC/releases/latest):
+
+- **macOS:** `ArabicBASIC-<version>-macos-universal.pkg` (Apple Silicon and Intel). Until the installer is signed with an Apple Developer ID, right-click the downloaded file and choose **Open** the first time.
+- **Windows:** `ArabicBASIC-<version>-windows-x64-setup.exe`. Until it is code-signed, Windows SmartScreen may show "Windows protected your PC"; choose **More info**, then **Run anyway**.
+
+Then open a new terminal and run:
+
+```bash
+arabicbasic --version
+arabicbasic path/to/script.bas
+```
+
+Build details: [`docs/native-build-notes.md`](docs/native-build-notes.md).
+
+---
+
+## Requirements (running the JAR)
 
 - **Java 25 or higher** on your `PATH`
 - Scripts saved as **UTF-8** (without BOM is fine). The lexer reads the source file as Unicode text.
