@@ -16,9 +16,10 @@ import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 class AppReplModeTest {
-  private static final String LTR_ISOLATE = "\u2066";
-  private static final String POP_DIRECTIONAL_ISOLATE = "\u2069";
-  private static final String RTL_MARK = "\u200F";
+  private static final String REPL_PROMPT_HEADER = "arabicbasic>";
+  private static final String RLI_MARK = "\u2067";
+  private static final String ALM_MARK = "\u061C";
+  private static final String REPL_INPUT_PREFIX = RLI_MARK + ALM_MARK;
   private static final String HISTORY_PROP = "arabicbasic.repl.history.path";
 
   @TempDir Path tempDir;
@@ -38,9 +39,8 @@ class AppReplModeTest {
     CliRunResult result = runCli(new String[] {"--repl"}, ":quit\n");
 
     assertEquals(0, result.exitCode());
-    assertTrue(
-        result.stdout().contains(LTR_ISOLATE + "arabicbasic> " + POP_DIRECTIONAL_ISOLATE + RTL_MARK),
-        () -> "stdout: " + result.stdout());
+    assertTrue(result.stdout().contains(REPL_PROMPT_HEADER), () -> "stdout: " + result.stdout());
+    assertTrue(result.stdout().contains(REPL_INPUT_PREFIX), () -> "stdout: " + result.stdout());
   }
 
   @Test
@@ -62,6 +62,14 @@ class AppReplModeTest {
   @Test
   void replExitCommandAllowsDirectionalMarks() {
     CliRunResult result = runCli(new String[] {"--repl"}, "\u200F:exit\u061C\n");
+
+    assertEquals(0, result.exitCode());
+    assertFalse(result.stderr().contains("REPL input had parse errors."), () -> "stderr: " + result.stderr());
+  }
+
+  @Test
+  void replAssignmentAcceptsDirectionalMarksAroundOperator() {
+    CliRunResult result = runCli(new String[] {"--repl"}, "صار ن \u200F=\u200E ٦\n:quit\n");
 
     assertEquals(0, result.exitCode());
     assertFalse(result.stderr().contains("REPL input had parse errors."), () -> "stderr: " + result.stderr());

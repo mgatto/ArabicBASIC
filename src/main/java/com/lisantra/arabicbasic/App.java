@@ -138,9 +138,11 @@ public class App implements Callable<Integer> {
     // If so, then remember that Scope has one Symbol table.
 
     try {
+      String scriptText = Files.readString(source);
+      String sanitizedScript = BidiControlSanitizer.stripDirectionalMarks(scriptText);
       int exitCode =
           ExecutionEngine.runSource(
-              CharStreams.fromPath(source),
+              CharStreams.fromString(sanitizedScript, source.toString()),
               arabicLocale,
               messageLocale,
               globalScope,

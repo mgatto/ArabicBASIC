@@ -1,11 +1,15 @@
 package com.lisantra.arabicbasic;
 
 import org.antlr.v4.runtime.CharStreams;
+import org.jline.keymap.KeyMap;
+import org.jline.reader.Binding;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.Reference;
 import org.jline.reader.UserInterruptException;
+import org.jline.reader.Widget;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.InfoCmp;
@@ -24,15 +28,17 @@ import java.util.Locale;
 import java.util.Map;
 
 final class ReplRunner {
-  // Isolate the ASCII prompt as LTR, then bias user input direction to RTL.
-  private static final String LTR_ISOLATE = "\u2066";
-  private static final String POP_DIRECTIONAL_ISOLATE = "\u2069";
+  // Keep editable input line RTL-biased and free of ASCII prompt text.
   private static final String RTL_MARK = "\u200F";
+  private static final String ALM_MARK = "\u061C";
+  private static final String RLI_MARK = "\u2067";
+  private static final String REPL_INPUT_MARKER_MODE_PROPERTY = "arabicbasic.repl.input.marker";
   private static final String DEFAULT_REPL_HISTORY_FILE = ".arabicbasic_repl_history";
   private static final String REPL_HISTORY_OVERRIDE_PROPERTY = "arabicbasic.repl.history.path";
-  private static final String REPL_PROMPT =
-      LTR_ISOLATE + "arabicbasic> " + POP_DIRECTIONAL_ISOLATE + RTL_MARK;
+  private static final String REPL_PROMPT_HEADER = "arabicbasic>";
+  private static final String REPL_INPUT_PREFIX = resolveReplInputPrefix();
   private static final String REPL_WELCOME = "ArabicBASIC REPL. Type :exit to quit.";
+  private static final String BIDI_NEUTRAL_WIDGET = "bidi-neutral-insert";
 
   private ReplRunner() {}
 
@@ -65,14 +71,17 @@ final class ReplRunner {
       while (true) {
         String input;
         try {
-          input = reader.readLine(REPL_PROMPT);
+          terminal.writer().println(REPL_PROMPT_HEADER);
+          terminal.flush();
+          input = reader.readLine(REPL_INPUT_PREFIX);
         } catch (UserInterruptException e) {
           continue;
         } catch (EndOfFileException e) {
           break;
         }
 
-        String trimmed = input.trim();
+        String inputWithBidiMarks = addRtlMarksAroundNeutralOperators(input);
+        String trimmed = inputWithBidiMarks.trim();
         if (trimmed.isEmpty()) {
           continue;
         }
@@ -87,9 +96,10 @@ final class ReplRunner {
         }
 
         try {
+          String sanitizedInput = BidiControlSanitizer.stripDirectionalMarks(inputWithBidiMarks);
           int result =
               ExecutionEngine.runSource(
-                  CharStreams.fromString(ensureTrailingLineBreak(input)),
+                  CharStreams.fromString(ensureTrailingLineBreak(sanitizedInput)),
                   arabicLocale,
                   messageLocale,
                   globalScope,
@@ -136,14 +146,16 @@ final class ReplRunner {
           new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
       System.out.println(REPL_WELCOME);
       while (true) {
-        System.out.print(REPL_PROMPT);
+        System.out.println(REPL_PROMPT_HEADER);
+        System.out.print(REPL_INPUT_PREFIX);
         String input = reader.readLine();
         if (input == null) {
           break;
         }
 
-        historyLines.add(input);
-        String trimmed = input.trim();
+        String inputWithBidiMarks = addRtlMarksAroundNeutralOperators(input);
+        historyLines.add(inputWithBidiMarks);
+        String trimmed = inputWithBidiMarks.trim();
         if (trimmed.isEmpty()) {
           continue;
         }
@@ -158,9 +170,10 @@ final class ReplRunner {
         }
 
         try {
+          String sanitizedInput = BidiControlSanitizer.stripDirectionalMarks(inputWithBidiMarks);
           int result =
               ExecutionEngine.runSource(
-                  CharStreams.fromString(ensureTrailingLineBreak(input)),
+                  CharStreams.fromString(ensureTrailingLineBreak(sanitizedInput)),
                   arabicLocale,
                   messageLocale,
                   globalScope,
@@ -209,12 +222,78 @@ final class ReplRunner {
     if (historyDirectory != null) {
       Files.createDirectories(historyDirectory);
     }
-    return LineReaderBuilder.builder()
-        .terminal(terminal)
-        .appName("arabicbasic")
-        .highlighter(new ReplSyntaxHighlighter())
-        .variable(LineReader.HISTORY_FILE, normalizedHistoryPath)
-        .build();
+    LineReader lineReader =
+        LineReaderBuilder.builder()
+            .terminal(terminal)
+            .appName("arabicbasic")
+            .highlighter(new ReplSyntaxHighlighter())
+            .variable(LineReader.HISTORY_FILE, normalizedHistoryPath)
+            .build();
+    configureBidiOperatorWidget(lineReader);
+    return lineReader;
+  }
+
+  private static void configureBidiOperatorWidget(LineReader lineReader) {
+    Map<String, Widget> widgets = lineReader.getWidgets();
+    Widget selfInsert = widgets.get(LineReader.SELF_INSERT);
+    if (selfInsert == null) {
+      return;
+    }
+
+    widgets.put(
+        BIDI_NEUTRAL_WIDGET,
+        () -> {
+          String key = lineReader.getLastBinding();
+          if (key == null || key.isEmpty()) {
+            return selfInsert.apply();
+          }
+          int cp = key.codePointAt(0);
+          if (!shouldInjectDirectionalMarks(cp, lineReader)) {
+            return selfInsert.apply();
+          }
+          lineReader.getBuffer().write(RTL_MARK + new String(Character.toChars(cp)) + RTL_MARK);
+          return true;
+        });
+
+    KeyMap<Binding> main = lineReader.getKeyMaps().get(LineReader.MAIN);
+    if (main == null) {
+      return;
+    }
+    for (char neutral : new char[] {'=', '+', '-', '*', '/', '<', '>', '^'}) {
+      main.bind(new Reference(BIDI_NEUTRAL_WIDGET), String.valueOf(neutral));
+    }
+  }
+
+  private static boolean shouldInjectDirectionalMarks(int cp, LineReader lineReader) {
+    if (!isNeutralOperator(cp)) {
+      return false;
+    }
+    return !isInsideStringLiteralAtCursor(lineReader);
+  }
+
+  private static boolean isInsideStringLiteralAtCursor(LineReader lineReader) {
+    String line = lineReader.getBuffer().toString();
+    int cursor = lineReader.getBuffer().cursor();
+    boolean inString = false;
+    boolean escaping = false;
+    int scanLimit = Math.max(0, Math.min(cursor, line.length()));
+    for (int i = 0; i < scanLimit; i++) {
+      char ch = line.charAt(i);
+      if (inString) {
+        if (escaping) {
+          escaping = false;
+        } else if (ch == '\\') {
+          escaping = true;
+        } else if (ch == '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch == '"') {
+        inString = true;
+      }
+    }
+    return inString;
   }
 
   private static Path resolveReplHistoryPath(Path historyFileOverride) {
@@ -229,6 +308,17 @@ final class ReplRunner {
 
     String userHome = System.getProperty("user.home", ".");
     return Paths.get(userHome).resolve(DEFAULT_REPL_HISTORY_FILE);
+  }
+
+  private static String resolveReplInputPrefix() {
+    String markerMode =
+        System.getProperty(REPL_INPUT_MARKER_MODE_PROPERTY, "rli-alm").trim().toLowerCase(Locale.ROOT);
+    return switch (markerMode) {
+      case "rlm" -> RTL_MARK;
+      case "alm" -> ALM_MARK;
+      case "rli" -> RLI_MARK;
+      default -> RLI_MARK + ALM_MARK;
+    };
   }
 
   private static void persistHistory(History history, boolean showDebug) {
@@ -267,7 +357,7 @@ final class ReplRunner {
   }
 
   private static ReplCommand resolveReplCommand(String trimmedInput) {
-    String normalized = stripDirectionalMarks(trimmedInput).toLowerCase(Locale.ROOT);
+    String normalized = BidiControlSanitizer.stripDirectionalMarks(trimmedInput).toLowerCase(Locale.ROOT);
     return switch (normalized) {
       case ":help", "help" -> ReplCommand.HELP;
       case ":exit", ":quit", "exit", "quit" -> ReplCommand.EXIT;
@@ -352,21 +442,46 @@ final class ReplRunner {
     terminal.flush();
   }
 
-  private static String stripDirectionalMarks(String input) {
-    // Some terminals inject/retain BiDi controls while editing; keep REPL commands robust.
-    return input
-        .replace("\u200E", "")
-        .replace("\u200F", "")
-        .replace("\u061C", "")
-        .replace("\u202A", "")
-        .replace("\u202B", "")
-        .replace("\u202C", "")
-        .replace("\u202D", "")
-        .replace("\u202E", "")
-        .replace("\u2066", "")
-        .replace("\u2067", "")
-        .replace("\u2068", "")
-        .replace("\u2069", "");
+  private static String addRtlMarksAroundNeutralOperators(String input) {
+    if (input == null || input.isEmpty()) {
+      return input;
+    }
+
+    StringBuilder sb = new StringBuilder(input.length() * 2);
+    boolean inString = false;
+    boolean escaping = false;
+    for (int i = 0; i < input.length(); i++) {
+      char ch = input.charAt(i);
+      if (inString) {
+        sb.append(ch);
+        if (escaping) {
+          escaping = false;
+        } else if (ch == '\\') {
+          escaping = true;
+        } else if (ch == '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch == '"') {
+        inString = true;
+        sb.append(ch);
+        continue;
+      }
+      if (isNeutralOperator(ch)) {
+        sb.append(RTL_MARK).append(ch).append(RTL_MARK);
+      } else {
+        sb.append(ch);
+      }
+    }
+    return sb.toString();
+  }
+
+  private static boolean isNeutralOperator(int cp) {
+    return switch (cp) {
+      case '=', '+', '-', '*', '/', '<', '>', '^' -> true;
+      default -> false;
+    };
   }
 
   private static String ensureTrailingLineBreak(String input) {
