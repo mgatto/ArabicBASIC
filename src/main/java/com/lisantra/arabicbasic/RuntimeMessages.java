@@ -17,7 +17,13 @@ public final class RuntimeMessages {
   public RuntimeMessages(Locale locale) {
     this.locale = Objects.requireNonNull(locale);
     this.bundle =
-        ResourceBundle.getBundle(BUNDLE, locale, RuntimeMessages.class.getClassLoader());
+        ResourceBundle.getBundle(
+            BUNDLE,
+            locale,
+            RuntimeMessages.class.getClassLoader(),
+            // Don't fall back to the JVM default locale (App sets it to Arabic) before the
+            // English base bundle.
+            ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES));
   }
 
   public Locale getLocale() {
