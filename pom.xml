@@ -237,6 +237,8 @@
                                 <buildArg>-H:IncludeLocales=ar,en</buildArg>
                                 <!-- JLine FFM terminal provider: silences the restricted-method warning. -->
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
+                                <!-- JLine FFM signal handler closes a shared Arena (REPL readLine). -->
+                                <buildArg>-H:+SharedArenaSupport</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>

@@ -41,7 +41,7 @@ scripts/package-macos-pkg.sh 0.7.3 target/installer/ArabicBASIC-0.7.3-macos.pkg 
 | `--version` | `arabicbasic-version.properties` (Maven-filtered with the project version, registered in `reachability-metadata.json`) read by `ManifestVersionProvider`. Native binaries have no JAR manifest. |
 | Arabic locale data (`ar-u-nu-arab`, Arabic-Indic digits) | `-H:IncludeLocales=ar,en` in the `native` profile |
 | UTF-8 | `-Dfile.encoding=UTF-8` in the `native` profile |
-| JLine terminal | JLine 4.1.0 ships its own native-image metadata; `--enable-native-access=ALL-UNNAMED` silences the FFM restricted-method warning |
+| JLine terminal | JLine 4.1.0 ships its own native-image metadata; `--enable-native-access=ALL-UNNAMED` silences the FFM restricted-method warning; `-H:+SharedArenaSupport` is required because JLine's FFM signal handler closes a shared `Arena` during `readLine` (without it the REPL crashes with `UnsupportedFeatureError: Support for Arena.ofShared is not active`) |
 | ANTLR runtime, ICU4J | needed no extra metadata; ICU4J is only reached from `--unicode-map` |
 
 Verified locally on macOS arm64: `--version`, the `*_Ar.bas` examples, runtime and parse error messages for `--locale ar`, `en` and `en-US`, `--unicode-map`, and the non-TTY REPL all produce output identical to the JAR.
@@ -97,13 +97,37 @@ With all of them set, `scripts/package-macos-pkg.sh` signs with the hardened run
 
 Windows does **not** require signing: an unsigned installer runs, but SmartScreen shows "Windows protected your PC" (More info > Run anyway), and Smart App Control (off on most PCs) blocks unsigned programs entirely. SmartScreen reputation also builds slowly, even with a certificate.
 
-Options when you want it:
+**Current decision:** ship the Windows installer **unsigned, with SHA-256 checksums** (`sha256sums.txt` on every release, verified by users with `Get-FileHash`; see the README). This is free, and acceptable for an early project whose users can click "More info > Run anyway". **Backup plan:** switch to **Azure Artifact Signing** once there is funding.
+
+Options considered:
 
 - **SignPath Foundation**: free for open source, but they decline very young projects.
-- **Azure Artifact Signing** (formerly Trusted Signing): about $10/month; individuals qualify only in the US and Canada.
+- **Azure Artifact Signing** (formerly Trusted Signing): about $10/month; individuals qualify only in the US and Canada. **Chosen backup.**
 - **Certum Open Source certificate**: roughly EUR 50-70 per year.
 
-The workflow already has a `signtool` path that activates when the secrets `WINDOWS_CERT_PFX_BASE64` and `WINDOWS_CERT_PASSWORD` exist. Most certificate authorities now issue keys on hardware tokens or cloud HSMs that cannot be exported to a `.pfx`; for those, replace the two sign steps with the CA's GitHub Action (SignPath or Azure) instead.
+The workflow already has a `signtool` path that activates when the secrets `WINDOWS_CERT_PFX_BASE64` and `WINDOWS_CERT_PASSWORD` exist. Azure Artifact Signing **cannot** use it: the key stays in Azure and there is no exportable `.pfx`. The same is true of most certificate authorities now, which issue keys on hardware tokens or cloud HSMs.
+
+### Switching to Azure Artifact Signing
+
+1. In Azure, create an **Artifact Signing account** and a **certificate profile**, and complete identity validation. Note the account's region **endpoint** (for example `https://eus.codesigning.azure.net/`).
+2. Authenticate the workflow to Azure. OIDC (workload identity federation) avoids storing a client secret; see the action's [`docs/OIDC.md`](https://github.com/Azure/artifact-signing-action/blob/main/docs/OIDC.md). Grant the app registration the certificate-profile signer role on the signing account (the role was called *Trusted Signing Certificate Profile Signer* before the rename; confirm the current name in the Azure portal). Add the Azure identifiers the login step needs (typically `AZURE_TENANT_ID` and `AZURE_CLIENT_ID` as repository secrets, plus `AZURE_CLIENT_SECRET` only if not using OIDC).
+3. In the `package-windows` job of `release.yml`, replace the two `signtool` sign steps ("Sign arabicbasic.exe" and "Sign installer") and the "Locate signtool" step with `azure/login` followed by `Azure/artifact-signing-action@v2`. Sign the binary **before** "Build installer", and the installer **after** it:
+   ```yaml
+   - uses: Azure/artifact-signing-action@v2
+     with:
+       endpoint: https://<region>.codesigning.azure.net/
+       signing-account-name: <account>
+       certificate-profile-name: <profile>
+       files: ${{ github.workspace }}\native\arabicbasic.exe
+       file-digest: SHA256
+       timestamp-rfc3161: http://timestamp.acs.microsoft.com
+       timestamp-digest: SHA256
+   ```
+   Then repeat it with `files: ${{ github.workspace }}\dist\ArabicBASIC-${{ needs.verify.outputs.version }}-windows-x64-setup.exe`. Check the action's README for the current inputs and the authentication step it expects; this was written from its `action.yml` and has not been run.
+4. Set `AppPublisher` in `packaging/windows/arabicbasic.iss` (currently `Lisantra`) to match the certificate subject, so the publisher name SmartScreen shows is consistent.
+5. Update the README Windows bullet and drop the "intentionally unsigned" wording. Keep `sha256sums.txt`.
+
+Expect SmartScreen reputation to build slowly even after signing starts.
 
 ## Linux (follow-on)
 
