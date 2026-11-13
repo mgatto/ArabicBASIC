@@ -60,7 +60,7 @@ java -agentlib:native-image-agent=config-merge-dir=src/main/resources/META-INF/n
 
 ## The workflow
 
-`.github/workflows/release.yml` runs on **a published GitHub Release** and on **manual dispatch** (`Actions > Release > Run workflow`).
+`.github/workflows/release.yml` runs on a **pushed `v<semver>` tag whose commit is on `main`**, on **a published GitHub Release**, and on **manual dispatch** (`Actions > Release > Run workflow`).
 
 1. `verify`: `mvn test`, and the release tag must equal `v<pom version>` (or a `-prerelease` suffix of it).
 2. `native`: 3-runner matrix with `graalvm/setup-graalvm` (**GraalVM Community Edition**, free of redistribution restrictions), `mvn -Pnative package`, then a smoke test (the native output is compared with the JAR on macOS).
@@ -70,7 +70,7 @@ java -agentlib:native-image-agent=config-merge-dir=src/main/resources/META-INF/n
 
 Manual runs with an empty `tag` only produce workflow artifacts. To attach to an existing release, give its `tag` and enable `upload`. To build a tagged release, check that tag out by passing it as `tag`.
 
-Typical flow after `./mvnw -Prelease process-resources` and `git push --follow-tags`: publish the GitHub Release for the tag, and the installers appear on it a few minutes later.
+Typical flow after `./mvnw -Prelease process-resources` and `git push --follow-tags`: the tag push starts the workflow, which creates the GitHub Release for the tag and attaches the installers a few minutes later. Pushing a tag whose commit is not on `main` fails the `verify` job.
 
 ## Signing
 
