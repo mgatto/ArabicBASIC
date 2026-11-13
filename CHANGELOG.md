@@ -1,3 +1,10 @@
+## [v0.8.1](https://github.com/mgatto/ArabicBASIC/compare/v0.8.0...v0.8.1) (2026-11-12)
+
+### Bug Fixes
+
+* JLine flaw in native builds caused immediate repl exit ([f9220f46a17a001](https://github.com/mgatto/ArabicBASIC/commit/f9220f46a17a001422faed282b9e882127c813a5))
+* crash in GraalVM builds ([e814f8a054810b8](https://github.com/mgatto/ArabicBASIC/commit/e814f8a054810b882aa54854b30dabf7f20e2824))
+
 ## [v0.8.0](https://github.com/mgatto/ArabicBASIC/compare/v0.7.3...v0.8.0) (2026-11-12)
 
 ### Features
