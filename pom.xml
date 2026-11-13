@@ -6,7 +6,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <antlr4.version>4.13.2</antlr4.version>
         <picocli.version>4.7.7</picocli.version>
-        <jline.version>4.1.0</jline.version>
+        <jline.version>4.4.8</jline.version>
         <!-- Plugin versions pinned for reproducible builds -->
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>

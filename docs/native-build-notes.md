@@ -41,7 +41,7 @@ scripts/package-macos-pkg.sh 0.7.3 target/installer/ArabicBASIC-0.7.3-macos.pkg 
 | `--version` | `arabicbasic-version.properties` (Maven-filtered with the project version, registered in `reachability-metadata.json`) read by `ManifestVersionProvider`. Native binaries have no JAR manifest. |
 | Arabic locale data (`ar-u-nu-arab`, Arabic-Indic digits) | `-H:IncludeLocales=ar,en` in the `native` profile |
 | UTF-8 | `-Dfile.encoding=UTF-8` in the `native` profile |
-| JLine terminal | JLine 4.1.0 ships its own native-image metadata; `--enable-native-access=ALL-UNNAMED` silences the FFM restricted-method warning; `-H:+SharedArenaSupport` is required because JLine's FFM signal handler closes a shared `Arena` during `readLine` (without it the REPL crashes with `UnsupportedFeatureError: Support for Arena.ofShared is not active`) |
+| JLine terminal | JLine ships its own native-image metadata (use 4.4.x: 4.1.0's FFM provider hit EOF ~0.1s after the prompt, so the REPL quit by itself); `--enable-native-access=ALL-UNNAMED` silences the FFM restricted-method warning; `-H:+SharedArenaSupport` is required because JLine's FFM signal handler closes a shared `Arena` during `readLine` (without it the REPL crashes with `UnsupportedFeatureError: Support for Arena.ofShared is not active`) |
 | ANTLR runtime, ICU4J | needed no extra metadata; ICU4J is only reached from `--unicode-map` |
 
 Verified locally on macOS arm64: `--version`, the `*_Ar.bas` examples, runtime and parse error messages for `--locale ar`, `en` and `en-US`, `--unicode-map`, and the non-TTY REPL all produce output identical to the JAR.
@@ -63,7 +63,7 @@ java -agentlib:native-image-agent=config-merge-dir=src/main/resources/META-INF/n
 `.github/workflows/release.yml` runs on a **pushed `v<semver>` tag whose commit is on `main`**, on **a published GitHub Release**, and on **manual dispatch** (`Actions > Release > Run workflow`).
 
 1. `verify`: `mvn test`, and the release tag must equal `v<pom version>` (or a `-prerelease` suffix of it).
-2. `native`: 3-runner matrix with `graalvm/setup-graalvm` (**GraalVM Community Edition**, free of redistribution restrictions), `mvn -Pnative package`, then a smoke test (the native output is compared with the JAR on macOS).
+2. `native`: 3-runner matrix with `graalvm/setup-graalvm` (**GraalVM Community Edition**, free of redistribution restrictions), `mvn -Pnative package`, then a smoke test (the native output is compared with the JAR on macOS) and, on macOS, `scripts/repl-smoke.py`, which drives `--repl` on a pseudo-TTY (the only way to reach the JLine code path in CI).
 3. `package-macos`: `lipo` merge, `.pkg`, optional signing and notarization.
 4. `package-windows`: Inno Setup installer, optional Authenticode signing, silent-install check.
 5. `publish`: `sha256sums.txt`, then `gh release upload --clobber` to the release.
