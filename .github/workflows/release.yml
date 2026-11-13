@@ -147,6 +147,14 @@ jobs:
             done
           fi
 
+      # The REPL uses JLine only on a real terminal (System.console() != null), so the
+      # smoke test above never reaches it. Run it on a pseudo-TTY: this catches Native
+      # Image errors such as "Support for Arena.ofShared is not active".
+      - name: REPL smoke test (pseudo-TTY)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: python3 scripts/repl-smoke.py "target/${{ matrix.exe }}"
+
       - uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.name }}

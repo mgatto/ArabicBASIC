@@ -20,7 +20,20 @@ A standalone **interpreter** for Arabic BASIC: programs use **Arabic keywords an
 Download an installer from the [latest release](https://github.com/mgatto/ArabicBASIC/releases/latest):
 
 - **macOS:** `ArabicBASIC-<version>-macos-universal.pkg` (Apple Silicon and Intel). Until the installer is signed with an Apple Developer ID, right-click the downloaded file and choose **Open** the first time.
-- **Windows:** `ArabicBASIC-<version>-windows-x64-setup.exe`. Until it is code-signed, Windows SmartScreen may show "Windows protected your PC"; choose **More info**, then **Run anyway**.
+- **Windows:** `ArabicBASIC-<version>-windows-x64-setup.exe`. The installer is intentionally unsigned for now: code-signing is planned once funding allows. Until then, Windows SmartScreen may show "Windows protected your PC"; choose **More info**, then **Run anyway**.
+
+**Verify your download.** Each release includes `sha256sums.txt`. Compare the hash of the file you downloaded with its line in that file:
+
+```powershell
+# Windows (PowerShell)
+(Get-FileHash .\ArabicBASIC-<version>-windows-x64-setup.exe -Algorithm SHA256).Hash
+```
+
+```bash
+# macOS / Linux, with sha256sums.txt in the same folder
+shasum -a 256 ArabicBASIC-<version>-macos-universal.pkg
+sha256sum -c --ignore-missing sha256sums.txt   # Linux
+```
 
 Then open a new terminal and run:
 
