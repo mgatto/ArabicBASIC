@@ -1,0 +1,252 @@
+/* ArabicBASIC editorial site — print / research-notebook palette */
+
+:root {
+  --paper:      #F7F4F8;
+  --ink:        #211B26;
+  --pomegranate:#B83E58;
+  --lapis:      #5146B8;
+  --citron:     #C3C94C;
+  --code-bg:    #1D1A22;
+  --code-fg:    #E0DCE8;
+  --rule:       #D5CFDC;
+  --measure:    38rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+  font-size: 1.1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- site chrome ---- */
+
+.site-head {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 0;
+}
+
+.site-title a {
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.site-title a:hover {
+  color: var(--lapis);
+}
+
+.site-foot {
+  max-width: var(--measure);
+  margin: 3rem auto 0;
+  padding: 0 1.5rem 3rem;
+  color: #6B6376;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: .78rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.2rem;
+}
+
+.site-foot a {
+  color: var(--lapis);
+  text-decoration: none;
+}
+
+.site-foot a:hover {
+  text-decoration: underline;
+}
+
+/* ---- hero ---- */
+
+.hero {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 2rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2.6rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+}
+
+.hero-arabic {
+  margin: .9rem 0 1.2rem;
+  font-size: 2rem;
+  line-height: 1.35;
+  color: var(--pomegranate);
+}
+
+.hero-lead {
+  margin: 0;
+  max-width: 32rem;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: #3D3646;
+}
+
+.hero-img {
+  display: block;
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  margin-top: 2.2rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+/* ---- body sections ---- */
+
+.body-section {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 1.2rem 1.5rem;
+}
+
+.body-section h2 {
+  margin: 0 0 .7rem;
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -.005em;
+  padding-top: .6rem;
+  border-top: 1px solid var(--rule);
+}
+
+.body-section p {
+  margin: 0 0 .9rem;
+  max-width: 35rem;
+}
+
+.body-section p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- code figure ---- */
+
+.code-figure {
+  margin: 1.6rem 0;
+  padding: 0;
+}
+
+.code-figure pre {
+  margin: 0;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border-radius: 6px;
+  padding: 1.3rem 1.5rem;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: .95rem;
+  line-height: 1.6;
+}
+
+.code-figure pre code {
+  display: block;
+  white-space: pre;
+}
+
+.code-figure figcaption {
+  margin-top: .45rem;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: .78rem;
+  color: #6B6376;
+}
+
+/* ---- readme CTA ---- */
+
+.readme-cta {
+  margin-top: 1rem;
+}
+
+.cta-link {
+  display: inline-block;
+  color: var(--lapis);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- links ---- */
+
+a {
+  color: var(--lapis);
+}
+
+a:hover {
+  color: var(--pomegranate);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--lapis);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---- inline Arabic ---- */
+
+[lang="ar"] {
+  /* system Arabic-capable fonts, with a good Naskh-style preferred */
+  font-family: "Noto Naskh Arabic", "Noto Sans Arabic", "Scheherazade New", "Amiri", "Traditional Arabic", serif;
+}
+
+/* ---- responsive ---- */
+
+@media (max-width: 640px) {
+  body {
+    font-size: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.8rem;
+  }
+
+  .hero-arabic {
+    font-size: 1.45rem;
+  }
+
+  .hero-lead {
+    font-size: .95rem;
+  }
+
+  .body-section h2 {
+    font-size: 1.3rem;
+  }
+
+  .code-figure pre {
+    padding: 1rem 1.1rem;
+    font-size: .85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+  }
+}

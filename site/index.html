@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ArabicBASIC — Programming in Arabic</title>
+<meta name="description" content="ArabicBASIC is an experiment in what programming can look like when Arabic is part of the language itself — not just the interface.">
+<link rel="canonical" href="https://mgatto.github.io/ArabicBASIC/">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-head">
+  <p class="site-title"><a href="/ArabicBASIC/">ArabicBASIC</a></p>
+</header>
+
+<main>
+
+<section aria-labelledby="hero-h" class="hero">
+  <div class="hero-text">
+    <h1 id="hero-h">What if programming spoke&nbsp;Arabic?</h1>
+    <p lang="ar" dir="rtl" class="hero-arabic">برمجة آمنة بلغتك الأم</p>
+    <p class="hero-lead">ArabicBASIC is an experiment in what programming can look like when Arabic is part of the language itself — not just the interface, the tutorial, or the explanation around&nbsp;code.</p>
+  </div>
+  <img src="assets/arabicbasic.png" alt="" width="600" height="337" class="hero-img" aria-hidden="true">
+</section>
+
+<section aria-labelledby="why-h" class="body-section">
+  <h2 id="why-h">Why this question matters</h2>
+  <p>Most programming languages assume English and the Latin script. Keywords, standard libraries, documentation, error messages, and the surrounding culture of practice all carry that assumption forward. For people whose primary language is not English, this adds a step: before you can think about the problem, you have to translate the tools.</p>
+  <p>That step is not insurmountable. People learn to program in languages other than their own every day. But it is a step that programming-language design has rarely treated as a choice rather than a given. I wanted to know what changes when Arabic is not only the language used to explain code, but the language the code is written&nbsp;in.</p>
+</section>
+
+<section aria-labelledby="setting-h" class="body-section">
+  <h2 id="setting-h">Why Arabic, and why&nbsp;BASIC?</h2>
+  <p>Arabic is a compelling case for this question. Its script runs right to left, its letters join and change shape depending on their neighbours, it has no upper and lower case, and its written form spans a spectrum from the formal register of Modern Standard Arabic through regional varieties. All of these become practical engineering concerns when Arabic is the surface syntax of a programming language, not just text inside string&nbsp;literals.</p>
+  <p>BASIC is a useful setting for the experiment because its vocabulary is small and its structure is legible. A BASIC interpreter has around two dozen keywords and a handful of control-flow forms. That compact surface keeps the language-design decisions visible instead of burying them in a large feature set. The point is not to compete with modern general-purpose languages, but to have a clear enough canvas that the design questions stand&nbsp;out.</p>
+</section>
+
+<section aria-labelledby="depth-h" class="body-section">
+  <h2 id="depth-h">Not just translated keywords</h2>
+  <p>Replacing English keywords with Arabic ones is the most visible change, but it is not the deepest one. ArabicBASIC is an interpreter whose programs use Arabic keywords and identifiers, accept Eastern Arabic–Indic numerals (١٢٣), and whose editor must handle right-to-left text, mixed-direction lines, and Arabic punctuation alongside Latin operators — all while keeping the program's logical structure&nbsp;intact.</p>
+
+  <figure class="code-figure" aria-label="ArabicBASIC code example">
+    <pre lang="ar" dir="rtl"><code>صار ن = ٥
+اذا ن &gt; ٣ ثم
+    اطبع &quot;أهلاً&quot;
+ختام اذا</code></pre>
+    <figcaption>A short ArabicBASIC program: declare a variable, test a condition, print a&nbsp;greeting.</figcaption>
+  </figure>
+
+  <p>The design work reaches into questions that English-based languages rarely need to ask. What should a variable name look like in a script with no letter case? How should the editor move the cursor through a line that mixes Arabic words with <code>=</code> and <code>&gt;</code>? When a language's everyday spelling includes multiple accepted forms of the same word — <span lang="ar">اذا</span> and <span lang="ar">إذا</span>, for example — which should the parser accept? These are not obstacles to overcome so much as features of the design space that English-first programming-language design has never had to&nbsp;explore.</p>
+</section>
+
+<section aria-labelledby="now-h" class="body-section">
+  <h2 id="now-h">What exists now</h2>
+  <p>ArabicBASIC is a working, standalone interpreter written in Java. It parses programs with ANTLR&nbsp;4, executes them with a hand-written tree visitor, and ships as a native executable with installers for macOS, Windows, and Linux. The desktop app bundles an Arabic-first editor built on CodeMirror&nbsp;6: syntax highlighting, error underlines, completion, hover information, and an interactive session panel, all in a dedicated window with proper right-to-left text&nbsp;layout.</p>
+  <p>A language server speaks the Language Server Protocol so editors and tools can offer diagnostics and completion. The interpreter's output uses the Arabic locale for numbers. Error messages are available in Arabic and English. The design is guided by a small set of principles — among them, that a programming language should do what you mean, and that computing should be safe in your own&nbsp;language.</p>
+</section>
+
+<section aria-labelledby="next-h" class="body-section">
+  <h2 id="next-h">What I hope comes next</h2>
+  <p>I want to ground the language's keyword choices in evidence — using corpus linguistics to understand how Arabic speakers actually use the words that become programming constructs, and how register, diglossia, and orthographic variation shape those choices. I want to grow the Arabic-language learning materials, examples, and teaching resources so that Arabic is present in the learning experience as well as the program syntax. I want to learn from people using it: Arabic speakers, learners, educators, and language designers who can tell me where the language and tools help and where they still create&nbsp;friction.</p>
+  <p>I want to keep improving the full experience of programming in Arabic — the editor, the diagnostics, the installation, the documentation — because those practical details determine whether a language is usable day to day. And in the longer term, I hope to explore whether ideas from ArabicBASIC can support experiments with programming languages shaped around other linguistic communities and local needs. That is an aspiration, not a feature of the current interpreter. For now, ArabicBASIC is one working answer to one question. I want to see where it&nbsp;leads.</p>
+</section>
+
+<section aria-labelledby="readme-h" class="body-section readme-cta">
+  <h2 id="readme-h">Read the project details</h2>
+  <p>The interpreter, the desktop app, installation, examples, and build instructions are all documented in the repository.</p>
+  <p><a href="https://github.com/mgatto/ArabicBASIC/blob/main/README.md" class="cta-link">ArabicBASIC on GitHub →</a></p>
+</section>
+
+</main>
+
+<footer class="site-foot">
+  <p>ArabicBASIC is an open-source project by <a href="https://github.com/mgatto">Michael Gatto</a>.</p>
+</footer>
+
+</body>
+</html>
